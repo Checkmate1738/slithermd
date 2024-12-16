@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+
+import json
+import sys
+
+def slither_json_to_markdown(slither_json):
+    """
+    Converts Slither JSON output to Markdown format.
+
+    Parameters:
+        slither_json (dict): JSON data from Slither.
+
+    Returns:
+        str: Markdown formatted text.
+    """
+    md_output = []
+
+    # Title
+    md_output.append("# Slither Analysis Report\n")
+
+    # Add general information
+    if "success" in slither_json:
+        md_output.append(f"- **Analysis Success**: {slither_json['success']}\n")
+
+    if "errors" in slither_json and slither_json["errors"]:
+        md_output.append("\n## Errors\n")
+        for error in slither_json["errors"]:
+            md_output.append(f"- {error}\n")
+
+    # Add detectors
+    if "results" in slither_json and "detectors" in slither_json["results"]:
+        md_output.append("\n## Detectors\n")
+        for detector in slither_json["results"]["detectors"]:
+            md_output.append(f"### {detector['check']}\n")
+            md_output.append(f"- **Impact**: {detector.get('impact', 'N/A')}\n")
+            md_output.append(f"- **Confidence**: {detector.get('confidence', 'N/A')}\n")
+            md_output.append(f"- **Description**: {detector.get('description', 'N/A')}\n")
+
+            # Add elements related to the detector
+            if "elements" in detector:
+                md_output.append("#### Affected Elements\n")
+                for element in detector["elements"]:
+                    name = element.get("name", "N/A")
+                    type_ = element.get("type", "N/A")
+                    md_output.append(f"- **{type_}**: {name}\n")
+
+    # Add summary (if available)
+    if "summary" in slither_json:
+        md_output.append("\n## Summary\n")
+        for key, value in slither_json["summary"].items():
+            md_output.append(f"- **{key.capitalize()}**: {value}\n")
+
+    return "\n".join(md_output)
+
+def main():
+    """Main function to convert Slither JSON output to Markdown."""
+    if len(sys.argv) != 3:
+        print("Usage: python slither_to_md.py <input_json> <output_md>")
+        sys.exit(1)
+
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+
+    # Load Slither JSON data
+    try:
+        with open(input_file, "r") as f:
+            slither_json = json.load(f)
+    except Exception as e:
+        print(f"Error loading JSON file: {e}")
+        sys.exit(1)
+
+    # Convert to Markdown
+    markdown_output = slither_json_to_markdown(slither_json)
+
+    # Write to output file
+    try:
+        with open(output_file, "w") as f:
+            f.write(markdown_output)
+        print(f"Markdown report saved to {output_file}")
+    except Exception as e:
+        print(f"Error writing Markdown file: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
